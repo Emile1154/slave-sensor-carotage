@@ -187,6 +187,7 @@ void InstrumentRunner::readSensors(){
     tenzoSensor.updateForce();
     magnetSensor.updateMagnet();
     encoder.updateCount();
+    encoder.updateFrequency();
     //encoder.EEPROMSignalCheck();  //if power is shutdown start write in EEPROM encoder value
 }
 
@@ -215,7 +216,13 @@ uint16_t InstrumentRunner::getValue(uint8_t key){
         return tenzoSensor.getCorrection();
     }
     if(key == SET_ENCODER_WIRE){
-        
+        return EEPROM.readByte(10);
+    }
+    if(key == SET_INVERT_ENCODER){
+        if(encoder.getInvert()){
+            return 1;
+        }
+        return 0;
     }
     if(key == CALIB_HALL){
         return magnetSensor.getCalibrate();
@@ -231,6 +238,9 @@ uint16_t InstrumentRunner::getValue(uint8_t key){
     }
     if(key == GET_ENCODER_LO){
         return lo_part;
+    }
+    if(key == GET_VELOCITY){
+        return encoder.getFrequency();
     }
     if(key == GET_HALL){
         return magnetSensor.getMagnet();
@@ -340,8 +350,11 @@ void InstrumentRunner::setValue(uint8_t key, uint8_t highByte, uint8_t lowByte){
     if(key == GET_TENSION){
         //invalid
     }
-    if(key == GET_ENCODER){
-       //invalid
+    if(key == GET_ENCODER_HI){
+        //set enc val
+    }
+    if(key == GET_ENCODER_LO){
+        //set enc val
     }
     if(key == GET_HALL){
         //invalid

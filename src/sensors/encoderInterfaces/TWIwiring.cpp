@@ -15,7 +15,7 @@ void TWIwiring::init(){
     Wire.setClock(400000);  //speed 400 kHz 
 }
 
-uint16_t TWIwiring::calculateAngle(){
+uint32_t TWIwiring::calculateAngle(){
     Wire.beginTransmission(0x06);  //default id on slave
     Wire.write(0x03);  //start address
     Wire.endTransmission();

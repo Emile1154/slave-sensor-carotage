@@ -10,7 +10,7 @@ private:
     /* data */
 public:
     virtual void init() = 0;
-    virtual uint16_t calculateAngle() = 0;
+    virtual uint32_t calculateAngle() = 0;
     virtual ~Interface() noexcept = default;
 };
 
@@ -20,7 +20,7 @@ class SPIwiring : public Interface
 
 public:
     void init() override;
-    uint16_t calculateAngle() override;
+    uint32_t calculateAngle() override;
     SPIwiring(/* args */);
     ~SPIwiring();
 };
@@ -30,7 +30,7 @@ class TWIwiring : public Interface
 {
 public:
     void init() override;
-    uint16_t calculateAngle() override;
+    uint32_t calculateAngle() override;
     TWIwiring(/* args */);
     ~TWIwiring();
 };

@@ -1,5 +1,4 @@
 #include <sensors/Sensors.h>
-
 Encoder::Encoder()
 {
     
@@ -23,15 +22,15 @@ void Encoder::init(){
 }
 
 void Encoder::updateCount(){
-    uint16_t angle = interface->calculateAngle(); // 0 : 3600
-    static int16_t prevAngle = 0;  
+    uint16_t angle = interface->calculateAngle(); // 0 : 36000
+    static int32_t prevAngle = 0;  
     if (angle != prevAngle) {
-        int16_t derivative = angle - prevAngle;
+        int32_t derivative = angle - prevAngle;
         
-        if (derivative > 1800) {
-            derivative -= 3600;
-        } else if (derivative < -1800) {
-            derivative += 3600;
+        if (derivative > 18000) {
+            derivative -= 36000;
+        } else if (derivative < -18000) {
+            derivative += 36000;
         }
         float revolutions = derivative / 360.0;
         if(!invert){
@@ -45,12 +44,37 @@ void Encoder::updateCount(){
     count = totalRevolutions;
 }
 
-uint16_t Encoder::getCount(){
+void Encoder::updateFrequency(){
+    if(count != oldCount){
+        frequency = abs(count - oldCount)*100/2;
+        oldCount = count;
+    }else{
+        frequency = 0;
+    }
+}
+
+uint16_t Encoder::getFrequency(){
+    return frequency;
+}
+
+uint32_t Encoder::getCount(){
     return count;
 }
 
 Interface * Encoder::getInterface(){
     return interface;
+}
+
+void Encoder::setCount(uint32_t count){
+    totalRevolutions = (float) count/100.0; //360.0 => 36000/100.0
+}
+
+void Encoder::setInvert(bool invert){
+    this->invert = invert;
+}
+
+bool Encoder::getInvert(){
+    return invert;
 }
 
 void Encoder::EEPROMSignalCheck(){
