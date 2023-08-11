@@ -44,18 +44,32 @@ void Encoder::updateCount(){
     count = totalRevolutions;
 }
 
-void Encoder::updateFrequency(){
-    if(count != oldCount){
-        frequency = abs(count - oldCount)*100/2;
-        oldCount = count;
-    }else{
-        frequency = 0;
-    }
-}
+// #define NUM_READ 300
 
-uint16_t Encoder::getFrequency(){
-    return frequency;
-}
+// uint16_t runMiddleArif(uint16_t newVal) {
+//   static int t = 0;
+//   static uint16_t vals[NUM_READ];
+//   static uint16_t average = 0;
+//   if (++t >= NUM_READ) t = 0; // перемотка t
+//   average -= vals[t];         // вычитаем старое
+//   average += newVal;          // прибавляем новое
+//   vals[t] = newVal;           // запоминаем в массив
+//   return (average / NUM_READ);
+// }
+
+// void Encoder::updateFrequency(){
+//     if(count != oldCount){
+//         uint16_t val = abs(count - oldCount)*18000;//   kilometer / hour | 1 h = 3600 sec;  dt = 20 ms;  
+//         frequency = runMiddleArif(val);
+//         oldCount = count;
+//     }else{
+//         frequency = 0;
+//     }
+// }
+
+// uint16_t Encoder::getFrequency(){
+//     return frequency;
+// }
 
 uint32_t Encoder::getCount(){
     return count;

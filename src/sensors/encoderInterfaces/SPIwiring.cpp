@@ -77,7 +77,7 @@ uint8_t CRC6_43_18bit (uint32_t w_InputData){
 } 
 
 
-uint16_t SPIwiring::calculateAngle(){
+uint32_t SPIwiring::calculateAngle(){
     PORTC &= ~(1 << CS); //set low
     uint32_t reciveData = read24bit();
     PORTC |= (1 << CS); //set hi, end reading

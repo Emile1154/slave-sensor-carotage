@@ -25,8 +25,7 @@
 #define GET_TENSION           10  // 000A     0 - 65535
 #define GET_ENCODER_HI        11  // 000B   | 0 - 65535    // set too
 #define GET_ENCODER_LO        12  // 000C   | 0 - 65535    // set too
-#define GET_VELOCITY          13  // 000D
-#define GET_HALL              14  // 000E     0 - 1 
+#define GET_HALL              13  // 000D     0 - 1 
 
 #endif
 //EXAMPLE FOR SINGLE WRITE REGISTER

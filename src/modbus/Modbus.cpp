@@ -30,14 +30,12 @@ extern const uint8_t ADDRESS_GET_ENCODER_HI[2] =   {0x00, 0x0B};
 
 extern const uint8_t ADDRESS_GET_ENCODER_LO[2] =   {0x00, 0x0C};
 
-extern const uint8_t ADDRESS_GET_VELOCITY[2] =   {0x00, 0x0D};
-
-extern const uint8_t ADDRESS_GET_HALL[2] =      {0x00, 0x0E};
+extern const uint8_t ADDRESS_GET_HALL[2] =      {0x00, 0x0D};
 
 
 
 
-const uint8_t* addresses[15] = {
+const uint8_t* addresses[14] = {
   ADDRESS_ID,
   ADDRESS_SPEED,
   ADDRESS_EVEN,
@@ -55,7 +53,6 @@ const uint8_t* addresses[15] = {
   ADDRESS_GET_TENSION,
   ADDRESS_GET_ENCODER_HI,
   ADDRESS_GET_ENCODER_LO,
-  ADDRESS_GET_VELOCITY,
   ADDRESS_GET_HALL
 };
 
@@ -123,7 +120,7 @@ uint8_t Modbus::validate(){
   }
   return 0;
 }
-uint8_t test[11] = {0x03, 0x03, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x38, 0x15};
+//uint8_t test[11] = {0x03, 0x03, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x38, 0x15};
 void Modbus::query(){
   for(uint8_t i = 0; i < sizeBufOutput; i++){
     Serial.write(bufferOutput[i]);   
@@ -165,17 +162,6 @@ bool Modbus::checkCrc(){
   }
   return true; 
 }
-
-// uint8_t Modbus::find_crc_lo_index(){
-//   uint8_t crc_lo_index = 0;
-//   for(uint8_t i = 0; i < 64; i++){  //crc last element and must not null
-//     if(bufferInput[i] != 0){
-//        crc_lo_index = i;
-//     }
-//   }
-//   return crc_lo_index;
-// }
-
 
 uint8_t Modbus::defineAndExecute(){ 
   CommandInterface * command = nullptr;
@@ -257,7 +243,7 @@ uint8_t Modbus::get_key(uint8_t hi_address, uint8_t lo_address){
         return i;      
     }
   }
-  return sizeof(addresses)+1;
+  return sizeof(addresses);
 }
 
 uint16_t Modbus::getCrc16(uint8_t bufferArray[], uint8_t length){

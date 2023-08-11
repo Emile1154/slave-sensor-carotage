@@ -51,7 +51,7 @@ uint32_t TWIwiring::calculateAngle(){
     {
         angle += (binary[i] << i);
     }
-    angle = angle*3600.0/16384;
+    angle = angle*36000.0/16384;
     return angle;    
 }
 

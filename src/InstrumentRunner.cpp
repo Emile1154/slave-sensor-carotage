@@ -133,8 +133,7 @@ void InstrumentRunner::run(){
     static uint64_t t2 = 0;
     if(_micros() - t2 > 200){  //old 200 t/e 20 ms 50hz
         readSensors(); // (int)(encoder.getCount()) 
-        //debug.println(tenzoSensor.getForce());
-        //debug.println((int)tenzoSensor.getPWM());
+        //debug.println(encoder.getFrequency());
         t2 = _micros();
     }
    
@@ -187,7 +186,7 @@ void InstrumentRunner::readSensors(){
     tenzoSensor.updateForce();
     magnetSensor.updateMagnet();
     encoder.updateCount();
-    encoder.updateFrequency();
+    //encoder.updateFrequency();
     //encoder.EEPROMSignalCheck();  //if power is shutdown start write in EEPROM encoder value
 }
 
@@ -231,22 +230,24 @@ uint16_t InstrumentRunner::getValue(uint8_t key){
         return tenzoSensor.getForce();
     }
     if(key == GET_ENCODER_HI){
-        static uint32_t tmp = encoder.getCount();
-        hi_part =  (tmp >> 16) | 0xFFFF;
-        lo_part = tmp | 0xFFFF;
+        uint32_t tmp = encoder.getCount();
+        hi_part =  (tmp >> 16) & 0xFFFF;
+        lo_part = tmp & 0xFFFF;
         return hi_part;
     }
     if(key == GET_ENCODER_LO){
         return lo_part;
     }
-    if(key == GET_VELOCITY){
-        return encoder.getFrequency();
-    }
+    // if(key == GET_VELOCITY){
+    //     return encoder.getFrequency();
+    // }
     if(key == GET_HALL){
         return magnetSensor.getMagnet();
     }
     return 0;
 }
+
+static uint16_t hi_val;
 
 //              eeprom loads table
 // slave_id speed_uart config_uart interval_uart  wire_encoder
@@ -352,9 +353,12 @@ void InstrumentRunner::setValue(uint8_t key, uint8_t highByte, uint8_t lowByte){
     }
     if(key == GET_ENCODER_HI){
         //set enc val
+        hi_val = (highByte << 8) | lowByte;
     }
     if(key == GET_ENCODER_LO){
         //set enc val
+        uint32_t encode = (hi_val << 16) | ((highByte << 8) | lowByte);
+        encoder.setCount(encode);
     }
     if(key == GET_HALL){
         //invalid
