@@ -16,9 +16,8 @@ void Tenzo::init(){
     TCCR0A = 0b00000011;  // fast pwm
     TCCR0A |=  (1 << COM0A1);
 
-    OCR0A = EEPROM.readByte(0);
-    //correction = EEPROM.readInt(1);
-    correction = 8;
+    OCR0A = EEPROM.readByte(11);
+    correction = EEPROM.readInt(12);
 }
 
 void Tenzo::setZero(){
@@ -51,7 +50,14 @@ void Tenzo::setZero(){
             OCR0A = pwm_tension;
         }
     }
-    EEPROM.writeByte(0, pwm_tension);
+    //write eeprom
+    while(1){
+        if(EEPROM.writeByte(11, pwm_tension) == true){
+            break;
+        }
+        
+    }
+    
 }
 
 uint8_t Tenzo::getPWM(){
@@ -65,10 +71,16 @@ void Tenzo::calibrate(uint16_t weight){
         10 kg = 70*correction/1023;
         correction = weight[KG]x1023/ADC_VALUE 
     */
-    uint16_t val = readADC();
-    correction = weight*1023/val;
+    //uint16_t val = readADC();
+    //correction = weight*1023/val;
     //eeprom write
-    EEPROM.writeInt(1,correction);
+    correction = weight; // for test
+    while (1)
+    {
+        if(EEPROM.writeInt(12,correction) == true){
+            break;
+        }
+    }
 }
 
 void Tenzo::updateForce(){
@@ -79,10 +91,9 @@ void Tenzo::updateForce(){
     }else{
         clean_adc = 0;
     }
-    uint16_t scaled_t = (uint16_t) (clean_adc * correction); //телеметрия натяжения 8191кг = 5v
-
-
-    force = scaled_t/8;
+    uint16_t scaled = (uint16_t) (clean_adc * correction); //телеметрия натяжения 8191кг = 5v
+    
+    force = scaled/8;
 }
 
 uint16_t Tenzo::getForce(){

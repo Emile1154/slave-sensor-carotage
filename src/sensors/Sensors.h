@@ -51,20 +51,17 @@ private:
     //float radius;  //in meter value from 0 to 1; depth = 2ПR; 
     //float depth;   // 0.01 
     Interface * interface; //I2C, SPI, AB or ABZ interface wiring
-    uint32_t count;
-    float totalRevolutions = 0;
+    uint32_t count = 10000000;
+    bool upd;
+    //uint32_t totalRevolutions = 10000000;
     bool invert;
 public:
     void init();
     void updateCount();            //convert angle to count
-    //void updateFrequency();
-
     uint32_t getCount();
     bool getInvert();
-    //uint16_t getFrequency();
     Interface * getInterface();
     void EEPROMSignalCheck();
-
 
     void setInvert(bool invert);
     void setCount(uint32_t count);

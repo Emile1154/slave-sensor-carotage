@@ -35,14 +35,14 @@ public:
     ~TWIwiring();
 };
 
-// class ABwiring : public Interface
-// {
-// public:
-//     void init() override;
-//     float calculateAngle() override;
-//     ABwiring(/* args */);
-//     ~ABwiring();
-// };
+class ABwiring : public Interface
+{
+public:
+    void init() override;
+    uint32_t calculateAngle() override;
+    ABwiring(/* args */);
+    ~ABwiring();
+};
 
 // class ABZwiring : public Interface
 // {
@@ -53,21 +53,5 @@ public:
 //     ~ABZwiring();
 // };
 
-
-// ABZwiring::ABZwiring(/* args */)
-// {
-// }
-
-// ABZwiring::~ABZwiring()
-// {
-// }
-
-// ABwiring::ABwiring(/* args */)
-// {
-// }
-
-// ABwiring::~ABwiring()
-// {
-// }
 #endif
 

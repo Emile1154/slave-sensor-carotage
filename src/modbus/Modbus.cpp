@@ -64,7 +64,7 @@ void Modbus::init(uint16_t bodRate, uint8_t type, uint16_t timeout){
   if (type == SERIAL_8E2 || type == SERIAL_8O2) bitsPerChar = 12;
   else if (type == SERIAL_8N2 || type == SERIAL_8E1 || type == SERIAL_8O1) bitsPerChar = 11;
   else bitsPerChar = 10; 
-  _charTimeout = (bitsPerChar * 25000) / bodRate;
+  _charTimeout = (bitsPerChar * 34909) / bodRate; // old val 25000
 }
 
 void Modbus::setId(uint8_t id){
@@ -82,7 +82,7 @@ void Modbus::update(uint16_t bodRate, uint8_t type, uint16_t timeout){
   if (type == SERIAL_8E2 || type == SERIAL_8O2) bitsPerChar = 12;
   else if (type == SERIAL_8N2 || type == SERIAL_8E1 || type == SERIAL_8O1) bitsPerChar = 11;
   else bitsPerChar = 10;
-  _charTimeout = (bitsPerChar * 25000) / bodRate;
+  _charTimeout = (bitsPerChar * 34909) / bodRate;  // old val 25000
 }
 
 bool Modbus::bufferEmpty(){
@@ -95,7 +95,7 @@ bool Modbus::bufferEmpty(){
 void Modbus::poll(){
   uint32_t tm = _micros();
   counter = 0;     
-  while(_micros() - tm <= 90 && counter < sizeof(bufferInput)){  //testing 03 03 00 08 00 01 04 2A
+  while(_micros() - tm <= _charTimeout && counter < sizeof(bufferInput)){  //testing 03 03 00 08 00 01 04 2A
     if(Serial.available()){
       tm = _micros();
       bufferInput[counter] = Serial.read();
@@ -106,7 +106,6 @@ void Modbus::poll(){
 
 uint8_t Modbus::validate(){
   if(counter < 8){
-    //ignore
     clearBufferInput();
     return 3;
   }
@@ -118,9 +117,10 @@ uint8_t Modbus::validate(){
     clearBufferInput();
     return 2;           //data damaged
   }
+  //return bufferInput;
   return 0;
 }
-//uint8_t test[11] = {0x03, 0x03, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x38, 0x15};
+
 void Modbus::query(){
   for(uint8_t i = 0; i < sizeBufOutput; i++){
     Serial.write(bufferOutput[i]);   
@@ -180,8 +180,8 @@ uint8_t Modbus::defineAndExecute(){
     }
     return 0;
   }
-  if(bufferInput[1] == 0x10){      //write group register
-    command = new CommandWrite();
+  if(bufferInput[1] == 0x10){      //write group register <!>
+    command = new CommandWrite(); 
     uint8_t count_register =   (bufferInput[4] << 8) | bufferInput[5]; 
     if(2*count_register != bufferInput[6]){ //2*count_register != count_data_bytes
       return 1;  //invalid command

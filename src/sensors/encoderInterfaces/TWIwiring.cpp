@@ -11,49 +11,32 @@ TWIwiring::~TWIwiring()
 }
 
 void TWIwiring::init(){
+    Wire.setClock(888888L);  //max freq
     Wire.begin();
-    Wire.setClock(400000);  //speed 400 kHz 
 }
 
+uint16_t bytes[2];    // 0 index high byte 1 index low byte
 uint32_t TWIwiring::calculateAngle(){
-    Wire.beginTransmission(0x06);  //default id on slave
-    Wire.write(0x03);  //start address
-    Wire.endTransmission();
-    
-    Wire.requestFrom(0x06, 2); //reading 2 bytes
-    uint8_t bytes[2];    // 0 index high byte 1 index low byte
-    float angle; 
-    uint8_t j = 0;
-    uint32_t tm = _micros();
-    while(_micros() - tm < 10){  //1 ms wait threashold
-        if(Wire.available()){
-            tm = _micros();
-            bytes[j] = Wire.read();
-            j++;
-            if(j == 2 ){
-                break;
-            }
-        } 
-    }
-    unsigned char binary[14];    
-    for (uint8_t i = 0; i < 6; i++) {
-        binary[i] = (bytes[1] >> (i + 2)) & 1;
-    }
-    for(uint8_t i = 0; i < 9; i++){
-        binary[i+6] = bytes[0] >> i & 1;   
-    }
-        
-    //val << 1   ==   *2
-    //val << 2   ==   *4
-    //val << 3   ==   *8
-    //val << 4   ==   *16
-    for (uint8_t i = 0; i < 14; i++)
-    {
-        angle += (binary[i] << i);
-    }
-    angle = angle*36000.0/16384;
-    return angle;    
+    Wire.requestFrom(0x06, 2, 0x03, 1, 0);
+    //if(Wire.available() > 1){    not use check for fast work
+    bytes[0] = Wire.read();
+    bytes[1] = Wire.read();        
+    //} 
+    uint16_t bits_enc = (bytes[0] << 6) | (bytes[1] >> 2);
+    return bits_enc*360000.0/16384.0; 
 }
+
+
+ //uint8_t j = 0;
+    //uint32_t tm = _micros();
+    //while(_micros() - tm < 1){  //0,1 ms wait threashold
+    //tm = _micros();
+            //bytes[j] = Wire.read();
+            //j++;
+            //if(j == 2 ){
+            //    break;
+            //}
+            //}
 
 // int address, error;
 //     uint8_t nDevices;

@@ -22,7 +22,7 @@ void adc_init(void){
 }
 
 void adc_start(void){
-    counter = 100;
+    counter = 200;
     ADCSRA |= (1 << ADSC);
 }
  
@@ -34,7 +34,7 @@ uint8_t adc_end(void){
 }
 
 uint16_t adc_result(void){
-    uint16_t result = adc_sum/100;
+    uint16_t result = adc_sum/200;
     adc_sum = 0;
     return result;
 }

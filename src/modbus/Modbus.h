@@ -18,7 +18,7 @@ private:
     bool checkCrc();
     //uint8_t find_crc_lo_index();
     uint16_t getCrc16(uint8_t bufferArray[], uint8_t length);
-    void clearBufferInput();
+    
 public:
     void init(uint16_t bodRate, uint8_t type, uint16_t timeout);
     bool bufferEmpty();
@@ -28,6 +28,7 @@ public:
     void query();
     void update(uint16_t bodRate, uint8_t type, uint16_t timeout);
     void setId(uint8_t id);
+    void clearBufferInput();
 };
 #endif
 
