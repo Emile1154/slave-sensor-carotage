@@ -11,19 +11,17 @@ TWIwiring::~TWIwiring()
 }
 
 void TWIwiring::init(){
-    Wire.setClock(888888L);  //max freq
+    Wire.setClock(800000L); 
     Wire.begin();
 }
 
 uint16_t bytes[2];    // 0 index high byte 1 index low byte
 uint32_t TWIwiring::calculateAngle(){
-    Wire.requestFrom(0x06, 2, 0x03, 1, 0);
-    //if(Wire.available() > 1){    not use check for fast work
+    Wire.requestFrom(0x06, 2, 0x03, 1, 0); //reading 2 bytes 0x03 0x04
     bytes[0] = Wire.read();
-    bytes[1] = Wire.read();        
-    //} 
+    bytes[1] = Wire.read();
     uint16_t bits_enc = (bytes[0] << 6) | (bytes[1] >> 2);
-    return bits_enc*360000.0/16384.0; 
+    return (uint32_t)(bits_enc*360000.0/16384.0); 
 }
 
 

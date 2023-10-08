@@ -6,43 +6,40 @@ Encoder::Encoder()
 
 Encoder::~Encoder()
 {
-    delete[] interface;
+    delete interface;
     interface = nullptr;
 }
 
 void Encoder::setInterface(Interface* interface){
     this->interface = interface;
-}
-
-void Encoder::init(){
     interface->init();
-    upd = false;
-    uint8_t inv = EEPROM.readByte(19);
+}
+uint32_t prevAngle = 0;  
+void Encoder::init(uint32_t count, uint8_t inv){
     invert = false;
     if(inv == 1){
         invert = true;
     }
-    uint32_t eeprom_val = EEPROM.readLong(15);
-    if(eeprom_val != 4294967295){
-        count = eeprom_val;
-    }
-    
+    this->count = count;    
+    prevAngle = interface->calculateAngle();  //fix on start
     DDRC |= (0 << EEPROM_SIGNAL_PIN);
 }
-int32_t prevAngle = 0;  
-int32_t angle = 0;
-int32_t delta = 0;
+
+uint32_t angle = 0;
+float delta = 0;
 void Encoder::updateCount(){
     angle = interface->calculateAngle(); // 0 : 360 000
-    delta = angle - prevAngle;
+    delta = (int32_t) (angle - prevAngle);
     prevAngle = angle;
+    //correction
     if (delta > 180000) {
         delta -= 360000;
     } 
     else if (delta < -180000) {
         delta += 360000;
     }
-    delta /= 360;
+
+    delta /= 360.0;
     if (invert) {
         delta *= -1;
     }
@@ -71,9 +68,14 @@ bool Encoder::getInvert(){
 
 
 void Encoder::EEPROMSignalCheck(){
-    if(PINC & (1 << EEPROM_SIGNAL_PIN) && ! upd){
-        if(EEPROM.writeLong(15,count) == true){
-            upd = true;
-        }
+    if(PINC & (1 << EEPROM_SIGNAL_PIN)){
+        writeFlag = true;
+        
+    }
+
+    if(writeFlag){
+        EEPROM.writeLong(21,count);
+        while (! EEPROM.isReady());
+        writeFlag = false;
     }
 }

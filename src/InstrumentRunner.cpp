@@ -1,6 +1,6 @@
 #include <InstrumentRunner.h>
 
-SoftwareSerial debug(8,10);
+//SoftwareSerial debug(8,10);
 
 uint8_t InstrumentRunner::id = 0;
 uint8_t InstrumentRunner::type = 0;
@@ -19,8 +19,13 @@ Encoder encoder;
 // slave_id speed_uart config_uart interval_uart  wire_encoder
 //    6         7           8           9             10     
 void InstrumentRunner::init(){  
-    debug.begin(9600);
-    while(!debug);
+    cli();
+    initTimer();
+    sei();
+
+    //debug.begin(9600);
+    //while(!debug);
+    
     interface = nullptr;
 
     uint8_t slaveId = EEPROM.readByte(6);
@@ -34,11 +39,11 @@ void InstrumentRunner::init(){
     }else{
         id = slaveId;
     }
-    debug.println((int)slaveId);
-    debug.println((int)speed_uart);
-    debug.println((int)config_uart);
-    debug.println((int)interval_uart);
-    debug.println((int)wire_encoder);
+    //debug.println((int)slaveId);
+    //debug.println((int)speed_uart);
+    //debug.println((int)config_uart);
+    //debug.println((int)interval_uart);
+    //debug.println((int)wire_encoder);
 
     if(speed_uart > 5 || speed_uart == 0){
         bodRate = 9600; //default 
@@ -97,20 +102,27 @@ void InstrumentRunner::init(){
         }
     }
     
-    interface->init();
-   
-    tenzoSensor.init();
-    magnetSensor.init();
-    
+    uint8_t pwm_tension = EEPROM.readByte(20);
+    uint16_t correction_tension = EEPROM.readInt(12);
+    uint16_t shift_adc = EEPROM.readInt(25);
+
+    uint8_t pwm_magnet = EEPROM.readByte(14);
+    uint32_t depth_enc = EEPROM.readLong(21);
+    uint8_t inv_enc = EEPROM.readByte(19);
+
+
+    //init sensors
     encoder.setInterface(interface);
+    encoder.init(depth_enc, inv_enc);
+    tenzoSensor.init(pwm_tension, correction_tension, shift_adc);
+    magnetSensor.init(pwm_magnet);
+    
     modbus.init(bodRate, type, 1000);
     modbus.setId(id);
     updateTimestamp();
 
-    debug.println(bodRate);
-    cli();
-    initTimer();
-    sei();
+    //debug.println(bodRate);
+    
     return;
 }
 
@@ -130,10 +142,10 @@ void InstrumentRunner::run(){
     static uint8_t state = 0;
     static uint64_t t = 0;
     static uint64_t t2 = 0;
-    encoder.updateCount();
+    encoder.updateCount();  //read encoder 
+    encoder.EEPROMSignalCheck();  //if power is shutdown start write in EEPROM encoder value
     if(_micros() - t2 >= 100){  //old 100 t/e 10 ms 100hz
-        readSensors(); // (int)() 
-        //debug.println(encoder.getCount());
+        readSensors(); 
         t2 = _micros();
     }
 
@@ -166,15 +178,15 @@ void InstrumentRunner::run(){
             }
             else if(status == 1){   //not for this device 
                 state = 0;   
-                debug.println("id");
+                //debug.println("id");
             }
             else if(status == 2){  // crc error
                 state = 0;
-                debug.println("crc");
+                //debug.println("crc");
             }
             else if(status == 3){
                 state = 0;
-                debug.println("trash");
+                //debug.println("trash");
             }
         }
         else if(state == 2 && _micros() - timer >= (T35 + interval)){ //timing t35 + interval
@@ -185,13 +197,11 @@ void InstrumentRunner::run(){
         }           
         t = _micros();
     }
-    //encoder.updateCount();
 }
   
 void InstrumentRunner::readSensors(){
     tenzoSensor.updateForce();
     magnetSensor.updateMagnet();
-    //encoder.EEPROMSignalCheck();  //if power is shutdown start write in EEPROM encoder value
 }
 
 static uint16_t hi_part , lo_part; 
@@ -219,11 +229,11 @@ uint16_t InstrumentRunner::getValue(uint8_t key){
         return tenzoSensor.getCorrection();
     }
     if(key == SET_ENCODER_WIRE){
-        debug.println("wire");
+        //debug.println("wire");
         return EEPROM.readByte(10);
     }
     if(key == SET_INVERT_ENCODER){
-        debug.println("inv");
+        //debug.println("inv");
         if(encoder.getInvert()){
             return 1;
         }
@@ -263,7 +273,7 @@ void InstrumentRunner::setValue(uint8_t key, uint8_t highByte, uint8_t lowByte){
     }
     if(key == SET_SPEED){
         //update bod rate 
-        debug.println('s');
+        //debug.println('s');
         switch (lowByte)
         {
             case 1:
@@ -285,18 +295,18 @@ void InstrumentRunner::setValue(uint8_t key, uint8_t highByte, uint8_t lowByte){
         tempSpeed = lowByte;
     }
     if(key == SET_EVEN){
-        debug.println('e');
+        //debug.println('e');
         tempType = lowByte;
     }
     if(key == SET_INTERVAL){
-        debug.println('i');
+        //debug.println('i');
         interval = 2*lowByte*10;
         EEPROM.writeByte(9, lowByte);
     }
     if(key == SET_COUNT_STOP_BIT){
         //this command must recived latest for correct update serial
         tempType += lowByte;
-        debug.println('z');
+        //debug.println('z');
         switch (tempType)
         {
             case 1:
@@ -362,7 +372,7 @@ void InstrumentRunner::setValue(uint8_t key, uint8_t highByte, uint8_t lowByte){
         EEPROM.writeByte(19, lowByte); // 0 - off; 1 - on
     }
     if(key == CALIB_HALL){
-        magnetSensor.calibrate(lowByte);
+        magnetSensor.setPWM(lowByte);
     }
     if(key == GET_TENSION){
         //invalid
@@ -379,5 +389,8 @@ void InstrumentRunner::setValue(uint8_t key, uint8_t highByte, uint8_t lowByte){
     }
     if(key == GET_HALL){
         //invalid
+    }
+    if(key == ACCEPT_HALL){
+        magnetSensor.EEPROMwrite();
     }
 }

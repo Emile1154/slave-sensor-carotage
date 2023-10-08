@@ -14,10 +14,11 @@ private:
     /* data */
     uint16_t correction;  // ADC value to kg
     uint16_t force;   //in kg
-    volatile uint8_t pwm_tension;
+    uint8_t pwm_tension;
     uint16_t shift_adc;
+    bool writeFlag = false;
 public:
-    void init();
+    void init(uint8_t _pwm, uint16_t _correction, uint16_t _adc);
     void calibrate(uint16_t weight);
     uint16_t getCorrection(); 
     void setZero();
@@ -33,13 +34,14 @@ class Magnet
 private:
     /* data */
     uint8_t pwm_duty;
-    bool magnet;
+    uint8_t magnet;
 public:
-    void init();
+    void init(uint8_t _pwm);
     uint8_t getCalibrate();
     void updateMagnet();
-    void calibrate(uint8_t duty);
-    bool getMagnet();
+    void setPWM(uint8_t pwm);
+    void EEPROMwrite();
+    uint8_t getMagnet();
     Magnet();
     ~Magnet();
 };
@@ -52,11 +54,11 @@ private:
     //float depth;   // 0.01 
     Interface * interface; //I2C, SPI, AB or ABZ interface wiring
     uint32_t count = 10000000;
-    bool upd;
     //uint32_t totalRevolutions = 10000000;
     bool invert;
+    bool writeFlag = false;
 public:
-    void init();
+    void init(uint32_t count, uint8_t inv);
     void updateCount();            //convert angle to count
     uint32_t getCount();
     bool getInvert();

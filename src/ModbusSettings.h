@@ -27,6 +27,8 @@
 #define GET_ENCODER_LO        12  // 000C   | 0 - 65535    // set too
 #define GET_HALL              13  // 000D     0 - 1 
 
+#define ACCEPT_HALL           14  // 000E
+
 #endif
 //EXAMPLE FOR SINGLE WRITE REGISTER
 /* 8

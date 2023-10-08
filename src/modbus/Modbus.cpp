@@ -32,10 +32,11 @@ extern const uint8_t ADDRESS_GET_ENCODER_LO[2] =   {0x00, 0x0C};
 
 extern const uint8_t ADDRESS_GET_HALL[2] =      {0x00, 0x0D};
 
+extern const uint8_t ADDRESS_ACCEPT_HALL[2] =    {0x00, 0x0E};
 
 
 
-const uint8_t* addresses[14] = {
+const uint8_t * addresses[15] = {
   ADDRESS_ID,
   ADDRESS_SPEED,
   ADDRESS_EVEN,
@@ -53,7 +54,9 @@ const uint8_t* addresses[14] = {
   ADDRESS_GET_TENSION,
   ADDRESS_GET_ENCODER_HI,
   ADDRESS_GET_ENCODER_LO,
-  ADDRESS_GET_HALL
+  ADDRESS_GET_HALL,
+
+  ADDRESS_ACCEPT_HALL
 };
 
 void Modbus::init(uint16_t bodRate, uint8_t type, uint16_t timeout){
@@ -201,7 +204,7 @@ uint8_t Modbus::defineAndExecute(){
       bufferOutput[i] = bufferInput[i];
     }
     uint16_t crc = getCrc16(bufferInput, 6);
-    bufferOutput[6] = (crc >> 8) & 0xFF;   //hi
+    bufferOutput[6] = (crc >> 8) & 0xFF;   //hi  
     bufferOutput[7] =  crc & 0xFF;         //low
     return 0;
   }

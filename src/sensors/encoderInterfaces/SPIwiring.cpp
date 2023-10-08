@@ -81,7 +81,6 @@ uint32_t SPIwiring::calculateAngle(){
     PORTC &= ~(1 << CS); //set low
     uint32_t reciveData = read24bit();
     PORTC |= (1 << CS); //set hi, end reading
-    return reciveData;
     //pack structure
     //  angle_data   magnet_data     crc6  
     //   0 - 13        14 - 17      18 - 23
