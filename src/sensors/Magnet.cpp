@@ -30,13 +30,18 @@ void Magnet::EEPROMwrite(){
     }
     
 }
-
+uint8_t buf;
 void Magnet::updateMagnet(){
     magnet = (PIND & (1 << HOLLA_SENSOR_PIN))/8;
+    if(magnet == 0){
+        buf = 0;
+    }
 }
 
 uint8_t Magnet::getMagnet(){
-    return magnet;
+    uint8_t tmp = buf;
+    buf = magnet;
+    return tmp;
 }
 
 uint8_t Magnet::getCalibrate(){

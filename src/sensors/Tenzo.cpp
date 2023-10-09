@@ -24,7 +24,8 @@ void Tenzo::init(uint8_t _pwm, uint16_t _correction, uint16_t _adc){
 void Tenzo::setZero(){
     uint16_t temp = readADC();
     if (temp > 200)
-    {
+    {   
+        pwm_tension = 255;
         while (1)
         {
             uint16_t val = readADC();
@@ -34,11 +35,15 @@ void Tenzo::setZero(){
                 break;
             }
             pwm_tension--;
+            if(pwm_tension <= START_PWM_NO_OFFSET){
+                break;
+            }
             OCR0A = pwm_tension;
         }
     }
     else if (temp < 200)
-    {
+    {   
+        pwm_tension = START_PWM_NO_OFFSET;
         while (1)
         {
             uint16_t val = readADC();
