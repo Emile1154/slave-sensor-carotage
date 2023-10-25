@@ -4,6 +4,7 @@
 
 #include <sensors/encoderInterfaces/Interface.h>
 #include <sensors/adc.h>
+#include <avr/interrupt.h>
 #include <avr/io.h>
 #include <IOsettings.h>
 #include <EEPROMex.h>
@@ -49,6 +50,7 @@ public:
 class Encoder
 {
 private:
+    
     /* data */
     //float radius;  //in meter value from 0 to 1; depth = 2ПR; 
     //float depth;   // 0.01 
@@ -68,7 +70,7 @@ public:
     void setInvert(bool invert);
     void setCount(uint32_t count);
     void setInterface(Interface* Interface);
-
+    //bool getWriteFlag();
     Encoder(); 
     ~Encoder();
 };

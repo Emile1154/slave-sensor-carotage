@@ -4,6 +4,7 @@
 
 #include <stdint.h>
 //<---------commands modbus rtu------------>
+//03 03 00 0A 00 01 A5 EA
 //<------------write commands--------------->
 //one register have size 16bit (65535)
 //      NAME_COMMAND         KEY    ADDRESS   VALUE

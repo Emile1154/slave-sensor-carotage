@@ -20,10 +20,10 @@ private:
     static uint16_t interval;          
     static uint16_t T240;       
     static void updateTimestamp();
-public:
+public: 
    
     void init();
-    
+    void interruptEEPROM();
     void run();
     void readSensors();
     static uint16_t getValue(uint8_t key);

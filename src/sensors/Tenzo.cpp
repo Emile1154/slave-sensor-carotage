@@ -25,7 +25,6 @@ void Tenzo::setZero(){
     uint16_t temp = readADC();
     if (temp > 200)
     {   
-        pwm_tension = 255;
         while (1)
         {
             uint16_t val = readADC();
@@ -35,15 +34,11 @@ void Tenzo::setZero(){
                 break;
             }
             pwm_tension--;
-            if(pwm_tension <= START_PWM_NO_OFFSET){
-                break;
-            }
             OCR0A = pwm_tension;
         }
     }
     else if (temp < 200)
     {   
-        pwm_tension = START_PWM_NO_OFFSET;
         while (1)
         {
             uint16_t val = readADC();
@@ -52,6 +47,9 @@ void Tenzo::setZero(){
                 shift_adc = val; //need save in eeprom too
                 break;
             }
+            // if(pwm_tension >= 255){
+            //     break;
+            // }
             pwm_tension++;
             OCR0A = pwm_tension;
         }
@@ -75,7 +73,7 @@ void Tenzo::calibrate(uint16_t weight){
         }
     }
 }
-
+uint32_t intermediateResult;
 void Tenzo::updateForce(){
     uint16_t adc = readADC();
     uint16_t clean_adc; 
@@ -85,8 +83,9 @@ void Tenzo::updateForce(){
         clean_adc = 0;
     }
     //uint16_t scaled = (uint16_t) (clean_adc * 8); //телеметрия натяжения 8191кг = 5v
-    
-    force = clean_adc*correction/1000.0;
+    intermediateResult = static_cast<uint32_t>(clean_adc) * static_cast<uint32_t>(correction);
+    force = static_cast<uint16_t>(intermediateResult / 10000);
+    //force = (float) (clean_adc*correction/10000.0);
 }
 
 uint16_t Tenzo::getForce(){

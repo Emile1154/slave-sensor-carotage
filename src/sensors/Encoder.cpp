@@ -14,6 +14,7 @@ void Encoder::setInterface(Interface* interface){
     this->interface = interface;
     interface->init();
 }
+uint32_t angle = 0;
 uint32_t prevAngle = 0;  
 void Encoder::init(uint32_t count, uint8_t inv){
     invert = false;
@@ -21,29 +22,38 @@ void Encoder::init(uint32_t count, uint8_t inv){
         invert = true;
     }
     this->count = count;    
+    
+    _delay_ms(500);
+    // if(count >= 10000000){
+    //     count = count - prevAngle;
+    // }else{
+    //     count = count + prevAngle;
+    // }
     prevAngle = interface->calculateAngle();  //fix on start
-    DDRC |= (0 << EEPROM_SIGNAL_PIN);
+    angle = prevAngle;
+    DDRC |= (0 << EEPROM_SIGNAL_PIN); 
+    PCICR |= (1 << PCIE1);
+    PCMSK1 |= (1 << PCINT8);
 }
 
-uint32_t angle = 0;
 float delta = 0;
 void Encoder::updateCount(){
     angle = interface->calculateAngle(); // 0 : 360 000
-    delta = (int32_t) (angle - prevAngle);
+    delta = (int32_t)(angle - prevAngle);
     prevAngle = angle;
     //correction
-    if (delta > 180000) {
+    if (delta >= 180000) {
         delta -= 360000;
     } 
-    else if (delta < -180000) {
+    else if (delta <= -180000) {
         delta += 360000;
     }
 
-    delta /= 360.0;
+    //delta /= 360.0;  //я думаю проблема с этим делением поскольку мы получим дробное значение
     if (invert) {
         delta *= -1;
     }
-    count += delta;
+    count += delta; //а здесь count uint32_t и мы теряем дробные значения
 }
 
 uint32_t Encoder::getCount(){
@@ -72,10 +82,13 @@ void Encoder::EEPROMSignalCheck(){
         writeFlag = true;
         
     }
-
     if(writeFlag){
-        EEPROM.writeLong(21,count);
+        EEPROM.writeLong(15,count);
         while (! EEPROM.isReady());
         writeFlag = false;
     }
 }
+
+// bool Encoder::getWriteFlag(){
+//     return writeFlag;
+// }

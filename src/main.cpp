@@ -9,8 +9,9 @@
  * Дата релиза:
  */  
 #include <InstrumentRunner.h>
+#include <avr/interrupt.h>
 InstrumentRunner instrument;
-
+ISR(PCINT1_vect);
 int main(){
   instrument.init();
   while(1){
@@ -20,3 +21,6 @@ int main(){
 }
 
 
+ISR(PCINT1_vect){
+    instrument.interruptEEPROM();
+}

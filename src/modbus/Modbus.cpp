@@ -169,6 +169,9 @@ bool Modbus::checkCrc(){
 uint8_t Modbus::defineAndExecute(){ 
   CommandInterface * command = nullptr;
   uint8_t key = get_key(bufferInput[2], bufferInput[3]);
+  if(key == sizeof(addresses)){
+    return 2;
+  }
   if(bufferInput[1] == 0x06){      //write single register
     command = new CommandWrite();
     uint8_t temp[3] = {key, bufferInput[4], bufferInput[5]};

@@ -1,6 +1,6 @@
 #include <InstrumentRunner.h>
 
-//SoftwareSerial debug(8,10);
+//SoftwareSerial debug(8,10); //RX, TX
 
 uint8_t InstrumentRunner::id = 0;
 uint8_t InstrumentRunner::type = 0;
@@ -23,8 +23,8 @@ void InstrumentRunner::init(){
     initTimer();
     sei();
 
-    //debug.begin(9600);
-    //while(!debug);
+    // debug.begin(9600);
+    // while(!debug);
     
     interface = nullptr;
 
@@ -39,11 +39,11 @@ void InstrumentRunner::init(){
     }else{
         id = slaveId;
     }
-    //debug.println((int)slaveId);
-    //debug.println((int)speed_uart);
-    //debug.println((int)config_uart);
-    //debug.println((int)interval_uart);
-    //debug.println((int)wire_encoder);
+    // debug.println((int)slaveId);
+    // debug.println((int)speed_uart);
+    // debug.println((int)config_uart);
+    // debug.println((int)interval_uart);
+    // debug.println((int)wire_encoder);
 
     if(speed_uart > 5 || speed_uart == 0){
         bodRate = 9600; //default 
@@ -77,7 +77,7 @@ void InstrumentRunner::init(){
     }
     
     if(interval_uart > 16 || interval_uart == 0){
-        interval = 120; //10*ms default
+        interval = 60; //10*ms default
     }else{
         interval = interval_uart*2*10; //10*ms value
     }
@@ -107,7 +107,7 @@ void InstrumentRunner::init(){
     uint16_t shift_adc = EEPROM.readInt(25);
 
     uint8_t pwm_magnet = EEPROM.readByte(14);
-    uint32_t depth_enc = EEPROM.readLong(21);
+    uint32_t depth_enc = EEPROM.readLong(15);
     uint8_t inv_enc = EEPROM.readByte(19);
 
 
@@ -122,7 +122,6 @@ void InstrumentRunner::init(){
     updateTimestamp();
 
     //debug.println(bodRate);
-    
     return;
 }
 
@@ -137,66 +136,74 @@ void InstrumentRunner::updateTimestamp(){
     T240 = 24*10000/kBit_velocity; //10*ms
 }
 
+
+void InstrumentRunner::interruptEEPROM(){
+    encoder.EEPROMSignalCheck();
+}
+
+
 void InstrumentRunner::run(){
     static volatile uint64_t timer = 0;
     static uint8_t state = 0;
     static uint64_t t = 0;
     static uint64_t t2 = 0;
-    encoder.updateCount();  //read encoder 
-    encoder.EEPROMSignalCheck();  //if power is shutdown start write in EEPROM encoder value
-    if(_micros() - t2 >= 100){  //old 100 t/e 10 ms 100hz
-        readSensors(); 
-        t2 = _micros();
-    }
-
-    if(_micros() - t > 1){    
-        
-        //modbus rtu automat
-        if(state == 0 && _micros() - timer >= T240 && ! modbus.bufferEmpty()){ //+ timing t240 after sending prev answer ot master
-            modbus.poll(); //start reading
-            timer = _micros(); //remember time after success reading
-            state++; 
+    //encoder.EEPROMSignalCheck();  //if power is shutdown start write in EEPROM encoder value
+    //if(! encoder.getWriteFlag()){
+        encoder.updateCount();  //read encoder 
+    
+        if(_micros() - t2 >= 200){  //old 100 t/e 10 ms 100hz
+            readSensors(); 
+            t2 = _micros();
         }
-        else if(state == 1){  
-            uint8_t status = modbus.validate();   
-            // for (uint8_t i = 0; i < 16; i++)
-            // {
-            //     debug.printf("%02X", status[i]);  //set speed 03 06 75 02 00 04 32 27
-            //     debug.print(" ");                 //set bitcnt 03 06 75 0A 00 00 B2 26
-            // }
-            // debug.println();
-            // modbus.clearBufferInput();
-            // state = 0;
 
-            if(status == 0){ //if input command is validated
-                
-                if(modbus.defineAndExecute() == 0){ //if success executed command
-                    state++;
-                }else{
+        if(_micros() - t > 1){    
+            
+            //modbus rtu automat
+            if(state == 0 && _micros() - timer >= T240 && ! modbus.bufferEmpty()){ //+ timing t240 after sending prev answer ot master
+                modbus.poll(); //start reading
+                timer = _micros(); //remember time after success reading
+                state++; 
+            }
+            else if(state == 1){  
+                uint8_t status = modbus.validate();   
+                // for (uint8_t i = 0; i < 16; i++)
+                // {
+                //     debug.printf("%02X", status[i]);  //set speed 03 06 75 02 00 04 32 27
+                //     debug.print(" ");                 //set bitcnt 03 06 75 0A 00 00 B2 26
+                // }
+                // debug.println();
+                // modbus.clearBufferInput();
+                // state = 0;
+
+                if(status == 0){ //if input command is validated
+                    
+                    if(modbus.defineAndExecute() == 0){ //if success executed command
+                        state++;
+                    }else{
+                        state = 0;
+                    }
+                }
+                else if(status == 1){   //not for this device 
+                    state = 0;   
+                }
+                else if(status == 2){  // crc error
                     state = 0;
+                    //debug.println("crc");
+                }
+                else if(status == 3){
+                    state = 0;
+                    //debug.println("trash");
                 }
             }
-            else if(status == 1){   //not for this device 
-                state = 0;   
-                //debug.println("id");
-            }
-            else if(status == 2){  // crc error
+            else if(state == 2 && _micros() - timer >= (T35 + interval)){ //timing t35 + interval
+                modbus.query(); // send answer to master device
+                //debug.println("send");
+                timer = _micros();    //remember time after success sending
                 state = 0;
-                //debug.println("crc");
-            }
-            else if(status == 3){
-                state = 0;
-                //debug.println("trash");
-            }
+            }           
+            t = _micros();
         }
-        else if(state == 2 && _micros() - timer >= (T35 + interval)){ //timing t35 + interval
-            modbus.query(); // send answer to master device
-            //debug.println("send");
-            timer = _micros();    //remember time after success sending
-            state = 0;
-        }           
-        t = _micros();
-    }
+    //}
 }
   
 void InstrumentRunner::readSensors(){
