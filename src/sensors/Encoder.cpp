@@ -31,6 +31,8 @@ void Encoder::init(uint32_t count, uint8_t inv){
     // }
     prevAngle = interface->calculateAngle();  //fix on start
     angle = prevAngle;
+
+    //interrupt init save enc count
     DDRC |= (0 << EEPROM_SIGNAL_PIN); 
     PCICR |= (1 << PCIE1);
     PCMSK1 |= (1 << PCINT8);

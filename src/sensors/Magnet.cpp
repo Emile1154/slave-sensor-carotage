@@ -32,7 +32,7 @@ void Magnet::EEPROMwrite(){
 }
 uint8_t buf;
 void Magnet::updateMagnet(){
-    magnet = (PIND & (1 << HOLLA_SENSOR_PIN))/8;
+    magnet = (PIND & (1 << HOLLA_SENSOR_PIN))/16;
     if(magnet == 0){
         buf = 0;
     }

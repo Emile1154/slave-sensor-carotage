@@ -8,7 +8,10 @@
 #include <sensors/Sensors.h> 
 #include <EEPROMex.h>
 #include <math.h>
-#include <SoftwareSerial.h>
+
+#define NEW_PCB_VERSION 1
+#define DEBUG_ENABLE    0
+
 class InstrumentRunner
 {
 private:
@@ -24,6 +27,7 @@ public:
    
     void init();
     void interruptEEPROM();
+    void interruptReset();
     void run();
     void readSensors();
     static uint16_t getValue(uint8_t key);

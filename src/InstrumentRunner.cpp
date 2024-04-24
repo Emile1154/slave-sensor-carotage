@@ -1,20 +1,25 @@
 #include <InstrumentRunner.h>
 
-//SoftwareSerial debug(8,10); //RX, TX
 
-uint8_t InstrumentRunner::id = 0;
-uint8_t InstrumentRunner::type = 0;
+
+#if DEBUG_ENABLE
+#include <SoftwareSerial.h>
+    SoftwareSerial debug(8,10); //RX, TX
+#endif
+
+uint8_t  InstrumentRunner::id = 0;
+uint8_t  InstrumentRunner::type = 0;
 uint16_t InstrumentRunner::bodRate = 0;
 uint16_t InstrumentRunner::timeout = 0;
 uint16_t InstrumentRunner::interval = 0;
 uint16_t InstrumentRunner::T35 = 0;
 uint16_t InstrumentRunner::T240 = 0;
 
-Interface * interface;
-Modbus modbus;
-Tenzo tenzoSensor;
-Magnet magnetSensor;
-Encoder encoder;
+Interface  *interface;
+Modbus      modbus;
+Tenzo       tenzoSensor;
+Magnet      magnetSensor;
+Encoder     encoder;
 //              eeprom loads table
 // slave_id speed_uart config_uart interval_uart  wire_encoder
 //    6         7           8           9             10     
@@ -23,9 +28,11 @@ void InstrumentRunner::init(){
     initTimer();
     sei();
 
-    // debug.begin(9600);
-    // while(!debug);
-    
+#if DEBUG_ENABLED
+    debug.begin(9600);
+    while(!debug);
+#endif
+
     interface = nullptr;
 
     uint8_t slaveId = EEPROM.readByte(6);
@@ -39,11 +46,14 @@ void InstrumentRunner::init(){
     }else{
         id = slaveId;
     }
-    // debug.println((int)slaveId);
-    // debug.println((int)speed_uart);
-    // debug.println((int)config_uart);
-    // debug.println((int)interval_uart);
-    // debug.println((int)wire_encoder);
+
+#if DEBUG_ENABLED
+    debug.println((int)slaveId);
+    debug.println((int)speed_uart);
+    debug.println((int)config_uart);
+    debug.println((int)interval_uart);
+    debug.println((int)wire_encoder);
+#endif
 
     if(speed_uart > 5 || speed_uart == 0){
         bodRate = 9600; //default 
@@ -121,7 +131,9 @@ void InstrumentRunner::init(){
     modbus.setId(id);
     updateTimestamp();
 
-    //debug.println(bodRate);
+#if DEBUG_ENABLED
+    debug.println(bodRate);
+#endif
     return;
 }
 
@@ -137,73 +149,120 @@ void InstrumentRunner::updateTimestamp(){
 }
 
 
+void recoveryEEPROM(){
+    EEPROM.writeByte(6,  3);   //slave id
+    EEPROM.writeByte(7,  4);   //speed_uart 9600
+    EEPROM.writeByte(8,  5);   //config_uart
+    EEPROM.writeByte(9,  3);   //interval_uart
+    EEPROM.writeByte(10, 1);  //wire encoder
+}
+
+void restart(){
+    WDTCSR = 0x18;
+    WDTCSR = 0x08;
+    asm("wdr");
+    while(1);
+}
+
+
 void InstrumentRunner::interruptEEPROM(){
     encoder.EEPROMSignalCheck();
 }
 
+
+#if NEW_PCB_VERSION
+uint64_t rst_timer = 0;
+
+volatile uint8_t rst_eeprom = 0;
+void InstrumentRunner::interruptReset(){
+    rst_eeprom = 1;
+}
+#endif
 
 void InstrumentRunner::run(){
     static volatile uint64_t timer = 0;
     static uint8_t state = 0;
     static uint64_t t = 0;
     static uint64_t t2 = 0;
-    //encoder.EEPROMSignalCheck();  //if power is shutdown start write in EEPROM encoder value
-    //if(! encoder.getWriteFlag()){
-        encoder.updateCount();  //read encoder 
-    
-        if(_micros() - t2 >= 200){  //old 100 t/e 10 ms 100hz
-            readSensors(); 
-            t2 = _micros();
+
+#if NEW_PCB_VERSION
+    if(rst_eeprom && _micros() - rst_timer >= 10000){  //1 sec interval
+        if( !(PIND & (1 << PD2) ) ){ //if button pressed
+            rst_eeprom++;
+            if(rst_eeprom > 6) { //6 sec
+                //recovery eeprom
+                recoveryEEPROM();
+                rst_eeprom = 0;
+                restart();
+            }
+        }else{
+            rst_eeprom = 0;
         }
+        rst_timer = _micros();
+    }
+#endif
 
-        if(_micros() - t > 1){    
-            
-            //modbus rtu automat
-            if(state == 0 && _micros() - timer >= T240 && ! modbus.bufferEmpty()){ //+ timing t240 after sending prev answer ot master
-                modbus.poll(); //start reading
-                timer = _micros(); //remember time after success reading
-                state++; 
-            }
-            else if(state == 1){  
-                uint8_t status = modbus.validate();   
-                // for (uint8_t i = 0; i < 16; i++)
-                // {
-                //     debug.printf("%02X", status[i]);  //set speed 03 06 75 02 00 04 32 27
-                //     debug.print(" ");                 //set bitcnt 03 06 75 0A 00 00 B2 26
-                // }
-                // debug.println();
-                // modbus.clearBufferInput();
-                // state = 0;
+    encoder.updateCount();  //read encoder 
 
-                if(status == 0){ //if input command is validated
-                    
-                    if(modbus.defineAndExecute() == 0){ //if success executed command
-                        state++;
-                    }else{
-                        state = 0;
-                    }
-                }
-                else if(status == 1){   //not for this device 
-                    state = 0;   
-                }
-                else if(status == 2){  // crc error
+    if(_micros() - t2 >= 200){  //old 100 t/e 10 ms 100hz
+        readSensors(); 
+        t2 = _micros();
+    }
+
+    if(_micros() - t > 1){    //0.1 ms
+
+        //modbus rtu automat
+        if(state == 0 && _micros() - timer >= T240 && ! modbus.bufferEmpty()){ //+ timing t240 after sending prev answer ot master
+            modbus.poll(); //start reading
+            timer = _micros(); //remember time after success reading
+            state++; 
+        }
+        else if(state == 1){  
+            uint8_t status = modbus.validate();   
+            // for (uint8_t i = 0; i < 16; i++)
+            // {
+            //     debug.printf("%02X", status[i]);  //set speed 03 06 75 02 00 04 32 27
+            //     debug.print(" ");                 //set bitcnt 03 06 75 0A 00 00 B2 26
+            // }
+            // debug.println();
+            // modbus.clearBufferInput();
+            // state = 0;
+
+            if(status == 0){ //if input command is validated
+                
+                if(modbus.defineAndExecute() == 0){ //if success executed command
+                    state++;
+                }else{
                     state = 0;
-                    //debug.println("crc");
-                }
-                else if(status == 3){
-                    state = 0;
-                    //debug.println("trash");
                 }
             }
-            else if(state == 2 && _micros() - timer >= (T35 + interval)){ //timing t35 + interval
-                modbus.query(); // send answer to master device
-                //debug.println("send");
-                timer = _micros();    //remember time after success sending
+            else if(status == 1){   //not for this device 
+                state = 0;   
+            }
+            else if(status == 2){  // crc error
                 state = 0;
-            }           
-            t = _micros();
+#if DEBUG_ENABLED
+                debug.println("crc");
+#endif
+            }
+            else if(status == 3){
+                state = 0;
+#if DEBUG_ENABLED
+                debug.println("trash");
+#endif
+            }
         }
-    //}
+        else if(state == 2 && _micros() - timer >= (T35 + interval)){ //timing t35 + interval
+            modbus.query(); // send answer to master device
+#if DEBUG_ENABLED
+            debug.println("send");
+#endif
+            timer = _micros();    //remember time after success sending
+            state = 0;
+        }           
+        t = _micros();
+    }
+//}
 }
   
 void InstrumentRunner::readSensors(){
@@ -236,11 +295,9 @@ uint16_t InstrumentRunner::getValue(uint8_t key){
         return tenzoSensor.getCorrection();
     }
     if(key == SET_ENCODER_WIRE){
-        //debug.println("wire");
         return EEPROM.readByte(10);
     }
     if(key == SET_INVERT_ENCODER){
-        //debug.println("inv");
         if(encoder.getInvert()){
             return 1;
         }
@@ -302,18 +359,15 @@ void InstrumentRunner::setValue(uint8_t key, uint8_t highByte, uint8_t lowByte){
         tempSpeed = lowByte;
     }
     if(key == SET_EVEN){
-        //debug.println('e');
         tempType = lowByte;
     }
     if(key == SET_INTERVAL){
-        //debug.println('i');
         interval = 2*lowByte*10;
         EEPROM.writeByte(9, lowByte);
     }
     if(key == SET_COUNT_STOP_BIT){
         //this command must recived latest for correct update serial
         tempType += lowByte;
-        //debug.println('z');
         switch (tempType)
         {
             case 1:

@@ -55,7 +55,7 @@ private:
     //float radius;  //in meter value from 0 to 1; depth = 2ПR; 
     //float depth;   // 0.01 
     Interface * interface; //I2C, SPI, AB or ABZ interface wiring
-    uint32_t count = 10000000;
+    uint32_t count = 2147483647; //0.25m = 1500; 0.5m = 3000; 1m = 6000;  
     //uint32_t totalRevolutions = 10000000;
     bool invert;
     bool writeFlag = false;
