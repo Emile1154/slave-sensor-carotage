@@ -59,6 +59,14 @@ const uint8_t * addresses[15] = {
   ADDRESS_ACCEPT_HALL
 };
 
+
+/**
+ * @brief 
+ * 
+ * @param bodRate 
+ * @param type 
+ * @param timeout 
+ */
 void Modbus::init(uint16_t bodRate, uint8_t type, uint16_t timeout){
   Serial.begin(bodRate, type);
   while (!Serial);
@@ -73,7 +81,13 @@ void Modbus::init(uint16_t bodRate, uint8_t type, uint16_t timeout){
 void Modbus::setId(uint8_t id){
   this->id = id;
 }
-
+/**
+ * @brief 
+ * 
+ * @param bodRate 
+ * @param type 
+ * @param timeout 
+ */
 void Modbus::update(uint16_t bodRate, uint8_t type, uint16_t timeout){
   delete[] bufferOutput;
   bufferOutput = nullptr;
@@ -87,14 +101,22 @@ void Modbus::update(uint16_t bodRate, uint8_t type, uint16_t timeout){
   else bitsPerChar = 10;
   _charTimeout = (bitsPerChar * 34909) / bodRate;  // old val 25000
 }
-
+/**
+ * @brief 
+ * 
+ * @return true 
+ * @return false 
+ */
 bool Modbus::bufferEmpty(){
   if(Serial.available()){
     return false;
   }
   return true;
 }
-
+/**
+ * @brief 
+ * 
+ */
 void Modbus::poll(){
   uint32_t tm = _micros();
   counter = 0;     
@@ -166,6 +188,8 @@ bool Modbus::checkCrc(){
   return true; 
 }
 
+uint8_t temp[3];
+
 uint8_t Modbus::defineAndExecute(){ 
   CommandInterface * command = nullptr;
   uint8_t key = get_key(bufferInput[2], bufferInput[3]);
@@ -174,7 +198,10 @@ uint8_t Modbus::defineAndExecute(){
   }
   if(bufferInput[1] == 0x06){      //write single register
     command = new CommandWrite();
-    uint8_t temp[3] = {key, bufferInput[4], bufferInput[5]};
+    temp[0] = key;
+    temp[1] = bufferInput[4];
+    temp[2] = bufferInput[5];
+    //uint8_t temp[3] = {key, bufferInput[4], bufferInput[5]};
     command->execute(temp);
     delete command;
     command = nullptr;
@@ -193,7 +220,10 @@ uint8_t Modbus::defineAndExecute(){
       return 1;  //invalid command
     }
     for(uint8_t i = 0; i < count_register; i++){
-      uint8_t temp[3] = {(uint8_t)(key+i),bufferInput[7+2*i],bufferInput[8+2*i]};
+      //uint8_t temp[3] = {(uint8_t)(key+i),bufferInput[7+2*i],bufferInput[8+2*i]};
+      temp[0] = key+i;
+      temp[1] = bufferInput[7+2*i];
+      temp[2] = bufferInput[8+2*i];
       command->execute(temp);
     }
     delete command;
@@ -222,7 +252,7 @@ uint8_t Modbus::defineAndExecute(){
     bufferOutput[1] = bufferInput[1];  //function
     bufferOutput[2] = count_register*2; //count data bytes
     for(uint8_t i = 0; i < count_register; i++){
-      uint8_t temp[1] = {(uint8_t)(key+i)};
+      temp[0] = key+i;
       uint16_t val = command->execute(temp); 
       bufferOutput[3+i*2] = (val >> 8) & 0xFF; //hi
       bufferOutput[4+i*2] =  val & 0xFF;       //low

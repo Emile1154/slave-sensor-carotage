@@ -21,8 +21,12 @@ void Tenzo::init(uint8_t _pwm, uint16_t _correction, uint16_t _adc){
     correction = _correction;
 }
 
+uint64_t timer_p = 0;
+#define TIMEOUT_TENZO 20000 // 2 sec    
+
 void Tenzo::setZero(){
     uint16_t temp = readADC();
+    timer_p = _micros();
     if (temp > 200)
     {   
         while (1)
@@ -31,6 +35,9 @@ void Tenzo::setZero(){
             if (val <= 190)
             {
                 shift_adc = val;
+                break;
+            }
+            if(_micros() - timer_p >= TIMEOUT_TENZO){
                 break;
             }
             pwm_tension--;
@@ -47,9 +54,9 @@ void Tenzo::setZero(){
                 shift_adc = val; //need save in eeprom too
                 break;
             }
-            // if(pwm_tension >= 255){
-            //     break;
-            // }
+            if(_micros() - timer_p >= TIMEOUT_TENZO){
+                break;
+            }
             pwm_tension++;
             OCR0A = pwm_tension;
         }

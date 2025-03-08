@@ -3,6 +3,7 @@
 
 TWIwiring::TWIwiring(/* args */)
 {
+    interface_code = 1;
 }
 
 TWIwiring::~TWIwiring()
@@ -15,8 +16,8 @@ void TWIwiring::init(){
     Wire.begin();
 }
 
-uint16_t bytes[2];    // 0 index high byte 1 index low byte
-uint8_t j = 0;
+static uint16_t bytes[2];    // 0 index high byte 1 index low byte
+static uint8_t j = 0;
 uint32_t TWIwiring::calculateAngle(){
     Wire.requestFrom(0x06, 2, 0x03, 1, 0); //reading 2 bytes 0x03 0x04
     

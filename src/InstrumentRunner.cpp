@@ -104,10 +104,10 @@ void InstrumentRunner::init(){
                 interface = new SPIwiring();
                 break;
             case 3:
-                //interface = new ABwiring();  //not finished implementation
+                interface = new ABwiring();  
                 break;
             case 4:
-                //interface = new ABZwiring(); //not finished implementation
+                interface = new STwiring();
                 break;
         }
     }
@@ -166,6 +166,10 @@ void restart(){
 
 
 void InstrumentRunner::interruptEEPROM(){
+    //is for ST encoder in interrupt
+    if(encoder.getInterface()->interface_code == 4){
+        encoder.setCount(interface->calculateAngle());
+    }
     encoder.EEPROMSignalCheck();
 }
 
@@ -186,24 +190,23 @@ void InstrumentRunner::run(){
     static uint64_t t2 = 0;
 
 #if NEW_PCB_VERSION
-    if(rst_eeprom && _micros() - rst_timer >= 10000){  //1 sec interval
-        if( !(PIND & (1 << PD2) ) ){ //if button pressed
-            rst_eeprom++;
-            if(rst_eeprom > 6) { //6 sec
-                //recovery eeprom
-                recoveryEEPROM();
-                rst_eeprom = 0;
-                restart();
-            }
-        }else{
-            rst_eeprom = 0;
-        }
-        rst_timer = _micros();
-    }
+    // if(rst_eeprom && _micros() - rst_timer >= 10000){  //1 sec interval
+    //     if( !(PIND & (1 << PD2) ) ){ //if button pressed
+    //         rst_eeprom++;
+    //         if(rst_eeprom > 6) { //6 sec
+    //             //recovery eeprom
+    //             recoveryEEPROM();
+    //             rst_eeprom = 0;
+    //             restart();
+    //         }
+    //     }else{
+    //         rst_eeprom = 0;
+    //     }
+    //     rst_timer = _micros();
+    // }
 #endif
 
     encoder.updateCount();  //read encoder 
-
     if(_micros() - t2 >= 200){  //old 100 t/e 10 ms 100hz
         readSensors(); 
         t2 = _micros();
@@ -415,14 +418,22 @@ void InstrumentRunner::setValue(uint8_t key, uint8_t highByte, uint8_t lowByte){
             EEPROM.writeByte(10,lowByte);
             break;
         case 3:
-            //not finished implementation
+            interface = new ABwiring();
+            EEPROM.writeByte(10,lowByte);
             break;
         case 4:
-            //not finished implementation
+            interface = new STwiring();
+            EEPROM.writeByte(10,lowByte);
             break;
         }
         interface->init();
+        //correction
+        if(interface->interface_code == 4){
+            interface->val = encoder.getCount();
+        }
         encoder.setInterface(interface);
+        
+        
     }
     if(key == SET_INVERT_ENCODER){
         bool invert = false;
@@ -446,6 +457,10 @@ void InstrumentRunner::setValue(uint8_t key, uint8_t highByte, uint8_t lowByte){
         //set enc val
         uint16_t lo_val = (highByte << 8) | lowByte;
         uint32_t encode = (hi_val << 16) | lo_val;
+        //correction
+        if(interface->interface_code == 4){
+            interface->val = encode;
+        }
         encoder.setCount(encode);
     }
     if(key == GET_HALL){
