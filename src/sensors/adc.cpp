@@ -11,6 +11,8 @@ ISR(ADC_vect){ //execute om every reset bit ADSC ending conversion
         return ;
     }
     adc_sum = 0;
+    counter = 200;
+    ADCSRA |= (1 << ADSC);
 }
 
 void adc_init(void){
@@ -22,29 +24,9 @@ void adc_init(void){
     ADCSRA |= (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0); //128 div 125kHz
     
 }
-
-void adc_start(void){
-    counter = 200;
-    ADCSRA |= (1 << ADSC);
-}
- 
-// uint8_t adc_end(void){
-//     if(counter != 0){
-//         return 0;
-//     }
-//     return 1;
-// }
-
-// uint16_t adc_result(void){
-//     uint16_t result = adc_sum/200;
-//     adc_sum = 0;
-//     return result;
-// }
-
 uint16_t readADC(void){
-    adc_start();
     if(counter == 200){
-        return 0;
+        return ADC;
     }
     return adc_sum/(200 - counter);
 }
